@@ -7,189 +7,190 @@
 We employ the identical preprocessing method as outlined in the work by [Qin et al DDLearn](https://github.com/microsoft/robustlearn/tree/main/ddlearn) on three publicly available HAR datasets, namely [DSADS](https://archive.ics.uci.edu/dataset/256/daily+and+sports+activities), [PAMAP2](https://archive.ics.uci.edu/dataset/231/pamap2+physical+activity+monitoring), and [USC-HAD](https://sipi.usc.edu/had/). By running its data preprocess code involving deal, divide_domain, and raw_aug_loader, we can obtain the dataset with the specified target and remain rate. The data file should be put in the `data` folder, such as `data/uschad/uschad_crosssubject_rawaug_rate0.2_t0_seed1_scalernorm.pkl`. Here, we only use the preprocessed original data for training.
 
 DSADS data store in 'uschad_crosssubject_rawaug_rate0.2_t0_seed1_scalernorm.pkl' and format, the training data is divided into 3 clients:
-#—— raw_trs ——
-#   type: list
-#   length = 2
-#   first element type: <class 'numpy.ndarray'>
-#   shape = (1626, 125, 45)
+—— raw_trs ——
+  type: list
+  length = 2
+  first element type: <class 'numpy.ndarray'>
+  shape = (1626, 125, 45)
 
-# —— aug_trs ——
-#   type: list
-#   length = 3
-#   first element type: <class 'numpy.ndarray'>
-#   shape = (11382, 125, 45)
+—— aug_trs ——
+  type: list
+  length = 3
+  first element type: <class 'numpy.ndarray'>
+  shape = (11382, 125, 45)
 
-# —— raw_vas ——
-#   type: list
-#   length = 2
-#   first element type: <class 'numpy.ndarray'>
-#   shape = (2712, 125, 45)
+—— raw_vas ——
+  type: list
+  length = 2
+  first element type: <class 'numpy.ndarray'>
+  shape = (2712, 125, 45)
 
-# —— aug_vas ——
-#   type: list
-#   length = 3
-#   first element type: <class 'numpy.ndarray'>
-#   shape = (18984, 125, 45)
+—— aug_vas ——
+  type: list
+  length = 3
+  first element type: <class 'numpy.ndarray'>
+  shape = (18984, 125, 45)
 
-# —— raw_trt ——
-#   type: list
-#   length = 2
-#   first element type: <class 'numpy.ndarray'>
-#   shape = (542, 125, 45)
+—— raw_trt ——
+  type: list
+  length = 2
+  first element type: <class 'numpy.ndarray'>
+  shape = (542, 125, 45)
 
-# —— aug_trt ——
-#   type: list
-#   length = 3
-#   first element type: <class 'numpy.ndarray'>
-#   shape = (3794, 125, 45)
+—— aug_trt ——
+  type: list
+  length = 3
+  first element type: <class 'numpy.ndarray'>
+  shape = (3794, 125, 45)
 
-# —— raw_vat ——
-#   type: list
-#   length = 2
-#   first element type: <class 'numpy.ndarray'>
-#   shape = (904, 125, 45)
+—— raw_vat ——
+  type: list
+  length = 2
+  first element type: <class 'numpy.ndarray'>
+  shape = (904, 125, 45)
 
-# —— aug_vat ——
-#   type: list
-#   length = 3
-#   first element type: <class 'numpy.ndarray'>
-#   shape = (6328, 125, 45)
+—— aug_vat ——
+  type: list
+  length = 3
+  first element type: <class 'numpy.ndarray'>
+  shape = (6328, 125, 45)
 
-# —— raw_tet ——
-#   type: list
-#   length = 2
-#   first element type: <class 'numpy.ndarray'>
-#   shape = (905, 125, 45)
+—— raw_tet ——
+  type: list
+  length = 2
+  first element type: <class 'numpy.ndarray'>
+  shape = (905, 125, 45)
 
-# —— aug_tet ——
-#   type: list
-#   length = 3
-#   first element type: <class 'numpy.ndarray'>
-#   shape = (6335, 125, 45)
+—— aug_tet ——
+  type: list
+  length = 3
+  first element type: <class 'numpy.ndarray'>
+  shape = (6335, 125, 45)
 
-# —— client_raw_trs ——
-#   type: dict
-#   number of clients = 3
-#   client IDs: [1, 2, 3]
-#   client 1 data:
-#     type: <class 'list'>
-#     length: 2
-#     first element shape: (542, 125, 45)
-#     first element type: <class 'numpy.ndarray'>
-#     second element shape: (542,)
-#     second element type: <class 'numpy.ndarray'>
+—— client_raw_trs ——
+  type: dict
+  number of clients = 3
+  client IDs: [1, 2, 3]
+  client 1 data:
+    type: <class 'list'>
+    length: 2
+    first element shape: (542, 125, 45)
+    first element type: <class 'numpy.ndarray'>
+    second element shape: (542,)
+    second element type: <class 'numpy.ndarray'>
 
-# —— client_aug_trs ——
-#   type: dict
-#   number of clients = 3
-#   client IDs: [1, 2, 3]
-#   client 1 data:
-#     type: <class 'list'>
-#     length: 3
-#     first element shape: (3794, 125, 45)
-#     first element type: <class 'numpy.ndarray'>
-#     second element shape: (3794,)
-#     second element type: <class 'numpy.ndarray'>
+—— client_aug_trs ——
+  type: dict
+  number of clients = 3
+  client IDs: [1, 2, 3]
+  client 1 data:
+    type: <class 'list'>
+    length: 3
+    first element shape: (3794, 125, 45)
+    first element type: <class 'numpy.ndarray'>
+    second element shape: (3794,)
+    second element type: <class 'numpy.ndarray'>
 
-# —— client_raw_vas ——
-#   type: dict
-#   number of clients = 3
-#   client IDs: [1, 2, 3]
-#   client 1 data:
-#     type: <class 'list'>
-#     length: 2
-#     first element shape: (904, 125, 45)
-#     first element type: <class 'numpy.ndarray'>
-#     second element shape: (904,)
-#     second element type: <class 'numpy.ndarray'>
+—— client_raw_vas ——
+  type: dict
+  number of clients = 3
+  client IDs: [1, 2, 3]
+  client 1 data:
+    type: <class 'list'>
+    length: 2
+    first element shape: (904, 125, 45)
+    first element type: <class 'numpy.ndarray'>
+    second element shape: (904,)
+    second element type: <class 'numpy.ndarray'>
 
-# —— client_aug_vas ——
-#   type: dict
-#   number of clients = 3
-#   client IDs: [1, 2, 3]
-#   client 1 data:
-#     type: <class 'list'>
-#     length: 3
-#     first element shape: (6328, 125, 45)
-#     first element type: <class 'numpy.ndarray'>
-#     second element shape: (6328,)
-#     second element type: <class 'numpy.ndarray'>
+—— client_aug_vas ——
+  type: dict
+  number of clients = 3
+  client IDs: [1, 2, 3]
+  client 1 data:
+    type: <class 'list'>
+    length: 3
+    first element shape: (6328, 125, 45)
+    first element type: <class 'numpy.ndarray'>
+    second element shape: (6328,)
+    second element type: <class 'numpy.ndarray'>
 
-# === Client Data Analysis ===
+=== Client Data Analysis ===
 
-# client_raw_trs:
-#   Client 1:
-#     Element 0: shape (542, 125, 45), dtype float64
-#     Element 1: shape (542,), dtype int64
-#   Client 2:
-#     Element 0: shape (542, 125, 45), dtype float64
-#     Element 1: shape (542,), dtype int64
-#   Client 3:
-#     Element 0: shape (542, 125, 45), dtype float64
-#     Element 1: shape (542,), dtype int64
+client_raw_trs:
+  Client 1:
+    Element 0: shape (542, 125, 45), dtype float64
+    Element 1: shape (542,), dtype int64
+  Client 2:
+    Element 0: shape (542, 125, 45), dtype float64
+    Element 1: shape (542,), dtype int64
+  Client 3:
+    Element 0: shape (542, 125, 45), dtype float64
+    Element 1: shape (542,), dtype int64
 
-# client_aug_trs:
-#   Client 1:
-#     Element 0: shape (3794, 125, 45), dtype float64
-#     Element 1: shape (3794,), dtype float64
-#     Element 2: shape (3794,), dtype float64
-#   Client 2:
-#     Element 0: shape (3794, 125, 45), dtype float64
-#     Element 1: shape (3794,), dtype float64
-#     Element 2: shape (3794,), dtype float64
-#   Client 3:
-#     Element 0: shape (3794, 125, 45), dtype float64
-#     Element 1: shape (3794,), dtype float64
-#     Element 2: shape (3794,), dtype float64
+client_aug_trs:
+  Client 1:
+    Element 0: shape (3794, 125, 45), dtype float64
+    Element 1: shape (3794,), dtype float64
+    Element 2: shape (3794,), dtype float64
+  Client 2:
+    Element 0: shape (3794, 125, 45), dtype float64
+    Element 1: shape (3794,), dtype float64
+    Element 2: shape (3794,), dtype float64
+  Client 3:
+    Element 0: shape (3794, 125, 45), dtype float64
+    Element 1: shape (3794,), dtype float64
+    Element 2: shape (3794,), dtype float64
 
-# client_raw_vas:
-#   Client 1:
-#     Element 0: shape (904, 125, 45), dtype float64
-#     Element 1: shape (904,), dtype int64
-#   Client 2:
-#     Element 0: shape (904, 125, 45), dtype float64
-#     Element 1: shape (904,), dtype int64
-#   Client 3:
-#     Element 0: shape (904, 125, 45), dtype float64
-#     Element 1: shape (904,), dtype int64
+client_raw_vas:
+  Client 1:
+    Element 0: shape (904, 125, 45), dtype float64
+    Element 1: shape (904,), dtype int64
+  Client 2:
+    Element 0: shape (904, 125, 45), dtype float64
+    Element 1: shape (904,), dtype int64
+  Client 3:
+    Element 0: shape (904, 125, 45), dtype float64
+    Element 1: shape (904,), dtype int64
 
-# client_aug_vas:
-#   Client 1:
-#     Element 0: shape (6328, 125, 45), dtype float64
-#     Element 1: shape (6328,), dtype float64
-#     Element 2: shape (6328,), dtype float64
-#   Client 2:
-#     Element 0: shape (6328, 125, 45), dtype float64
-#     Element 1: shape (6328,), dtype float64
-#     Element 2: shape (6328,), dtype float64
-#   Client 3:
-#     Element 0: shape (6328, 125, 45), dtype float64
-#     Element 1: shape (6328,), dtype float64
-#     Element 2: shape (6328,), dtype float64
+client_aug_vas:
+  Client 1:
+    Element 0: shape (6328, 125, 45), dtype float64
+    Element 1: shape (6328,), dtype float64
+    Element 2: shape (6328,), dtype float64
+  Client 2:
+    Element 0: shape (6328, 125, 45), dtype float64
+    Element 1: shape (6328,), dtype float64
+    Element 2: shape (6328,), dtype float64
+  Client 3:
+    Element 0: shape (6328, 125, 45), dtype float64
+    Element 1: shape (6328,), dtype float64
+    Element 2: shape (6328,), dtype float64
 
-# === Data Structure Summary ===
-# Target domain: 0 (测试集)
-# Source domains (参与方): [1, 2, 3]
-# Total training samples across all clients: 1626
-#   Client 1: 542 train samples, 904 val samples
-#   Client 2: 542 train samples, 904 val samples
-#   Client 3: 542 train samples, 904 val samples
+=== Data Structure Summary ===
+Target domain: 0 (测试集)
+Source domains (参与方): [1, 2, 3]
+Total training samples across all clients: 1626
+  Client 1: 542 train samples, 904 val samples
+  Client 2: 542 train samples, 904 val samples
+  Client 3: 542 train samples, 904 val samples
 
-# 每个client的数据格式是：
-# pythonclient_data = [X, y]  # 对于raw数据
-# client_data = [X, y, aug_label]  # 对于aug数据
-# 具体来说：
-# Raw数据 (client_raw_trs, client_raw_vas)
-# pythonclient_raw_trs[1] = [
-#     X,  # shape: (542, 125, 45) - 特征数据 [样本数, 时间窗口, 传感器特征]
-#     y   # shape: (542,) - 活动标签 [样本数]
-# ]
-# Aug数据 (client_aug_trs, client_aug_vas)
-# pythonclient_aug_trs[1] = [
-#     X,          # shape: (3794, 125, 45) - 增强后的特征数据
-#     y,          # shape: (3794,) - 活动标签
-#     aug_label   # shape: (3794,) - 增强方法标签 (0-6表示7种增强方法)
-# ]
+每个client的数据格式是：
+pythonclient_data = [X, y]  # 对于raw数据
+client_data = [X, y, aug_label]  # 对于aug数据
+具体来说：
+Raw数据 (client_raw_trs, client_raw_vas)
+pythonclient_raw_trs[1] = [
+    X,  # shape: (542, 125, 45) - 特征数据 [样本数, 时间窗口, 传感器特征]
+    y   # shape: (542,) - 活动标签 [样本数]
+]
+Aug数据 (client_aug_trs, client_aug_vas)
+pythonclient_aug_trs[1] = [
+    X,          # shape: (3794, 125, 45) - 增强后的特征数据
+    y,          # shape: (3794,) - 活动标签
+    aug_label   # shape: (3794,) - 增强方法标签 (0-6表示7种增强方法)
+]
+
 
 
 # Prerequisites
