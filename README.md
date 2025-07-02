@@ -215,20 +215,8 @@ We provide a brief introduction to each code folder. We change this model into F
 1. **Style_conditioner**: This folder is used to train the style conditioner, which is built based on [TS-TCC](https://github.com/emadeldeen24/TS-TCC/).  To adapt to our training dataset, we added new configs.
 2. **Diffusion_model**: This folder is used to train our diffusion model, which is adapted from [denoising-diffusion](https://github.com/lucidrains/denoising-diffusion-pytorch). to achieve the guidance goal, we made adjustments to the model structure and diffusion method, such as adding style embedding and multiple conditional guidance.
 3. **Featurenet**: This folder is used to generate synthetic data and train the feature network for classification.
-The process is：
-1. Local Style_conditioner Training
-Each client trains its own Style_conditioner on its local data to generate style embeddings.
 
-2. Local Diffusion Model Training
-Using the local Style_conditioner, each client trains a diffusion model on its own data.
-
-3. Model Aggregation
-Clients upload their trained diffusion‐model parameters to the server, which aggregates them (e.g., by averaging) into a single global diffusion model.
-
-4. Broadcast & Continue Training
-The server distributes the aggregated global model back to each client. Clients use it as the initialization for the next round of local diffusion‐model training.
-
-5. Iterate Until Convergence
+Style_conditioner & Diffusion_model's process is：first, Local Style_conditioner Training. Each client trains its own Style_conditioner on its local data to generate style embeddings.second, Local Diffusion Model Training.Using the local Style_conditioner, each client trains a diffusion model on its own data.Then, Model Aggregation: Clients upload their trained diffusion‐model parameters to the server, which aggregates them (e.g., by averaging) into a single global diffusion model.Then, Broadcast & Continue Training:The server distributes the aggregated global model back to each client. Clients use it as the initialization for the next round of local diffusion‐model training. Last, Iterate Until Convergence
 Steps 2–4 are repeated for a fixed number of rounds (or until convergence), so that all clients eventually share the same aggregated diffusion model.
 run"python combined_train.py \
     --seed 1 \
@@ -241,6 +229,8 @@ run"python combined_train.py \
     --local_training_steps 20000 \
     --aggregation_num 3 \
     --num_clients 3"
+
+Featurenet:
 We ran these experiments on a GeForce RTX 3090 Ti. The generation time may take some time, but we believe that existing fast diffusion models can help alleviate this problem.
 
 
