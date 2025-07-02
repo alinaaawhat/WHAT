@@ -208,37 +208,26 @@ Please download the dataset and run the [preprocessing code](https://github.com/
 
 
 
-# How to Run
-We provide the code for training the style conditioner, diffusion model, and feature network, which should be trained sequentially during each epoch. The commands for training all tasks with 20% of the USC-HAD, PAMAP, and DSADS datasets are provided below.
-
-#### USC-HAD 20% training data
-
-```
-sh run_uschad.sh
-```
-
-#### PAMAP 20% training data
-
-```
-sh run_pamap.sh
-```
-
-#### DSADS 20% training data
-
-```
-sh run_dsads.sh
-```
-
-
-
 # Instructions
 
-We provide a brief introduction to each code folder. We change this model into Federated setting. We divided 
+We provide a brief introduction to each code folder. We change this model into Federated setting. As dsads as example: 
 
 1. **Style_conditioner**: This folder is used to train the style conditioner, which is built based on [TS-TCC](https://github.com/emadeldeen24/TS-TCC/).  To adapt to our training dataset, we added new configs.
 2. **Diffusion_model**: This folder is used to train our diffusion model, which is adapted from [denoising-diffusion](https://github.com/lucidrains/denoising-diffusion-pytorch). to achieve the guidance goal, we made adjustments to the model structure and diffusion method, such as adding style embedding and multiple conditional guidance.
-3. **Featurenet**: This folder is used to generate synthetic data and train the feature network for classification. 
+3. **Featurenet**: This folder is used to generate synthetic data and train the feature network for classification.
 
+Each client trains their own Style_conditioner and then train diffusion model, aggregate diffusion model and send to clients to train each diffusion model. At the end, each cleint get an aggregated diffusion model. 
+run"python combined_train.py \
+    --seed 1 \
+    --selected_dataset 'dsads' \
+    --remain_rate 0.2 \
+    --target 0 \
+    --training_mode 'self_supervised' \
+    --logs_save_dir './Style_conditioner/conditioner_pth/' \
+    --results_folder './Diffusion_model/dm_pth/' \
+    --local_training_steps 20000 \
+    --aggregation_num 3 \
+    --num_clients 3"
 We ran these experiments on a GeForce RTX 3090 Ti. The generation time may take some time, but we believe that existing fast diffusion models can help alleviate this problem.
 
 
