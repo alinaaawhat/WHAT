@@ -21,7 +21,7 @@ from logging import handlers
 from copy import deepcopy
 import sys
 sys.path.append('./data_load/')
-from data_util.sensor_loader import SensorDataset,DataDataset
+from data_load.data_util.sensor_loader import SensorDataset,DataDataset
 from torch.utils.data import DataLoader
 import torch.utils.data as data
 
@@ -222,9 +222,7 @@ def generate_cross_client_synthetic_data(model, x, y, testuser, logger):
     }
 
 def train_diversity(model, args, train_loader, valid_loader, test_loader, testuser, max_epochs=120):
-    """
-    修改后的训练函数，支持限制最大训练轮数（用于联邦学习）
-    """
+    
     nowtime = datetime.now()
     timename = nowtime.strftime('%d_%m_%Y_%H_%M_%S')
     log_file_name = os.getcwd()+os.path.join('/Featurenet/logs/', testuser['name']+f"logs_{nowtime.strftime('%d_%m_%Y_%H_%M_%S')}.log")
@@ -410,98 +408,7 @@ def train_diversity(model, args, train_loader, valid_loader, test_loader, testus
     # 修改：限制训练轮数，支持联邦学习
     print(f"开始训练，最大轮数: {max_epochs}")
     
-    for epoch in range(max_epochs):
-        algorithm.train()
-        
-        # 完整的训练循环，基于原始代码逻辑
-        epoch_loss = 0.0
-        epoch_acc = 0.0
-        num_batches = 0
-        
-        for batch_idx, (data, target, domain) in enumerate(train_loader):
-            data, target, domain = data.to(device), target.to(device).long(), domain.to(device).long()
-            
-            # 数据预处理 - 确保维度正确
-            if len(data.shape) == 3:
-                data = data.unsqueeze(3)  # [batch, length, channels] -> [batch, length, channels, 1]
-            
-            # 转换数据格式以匹配模型期望的输入
-            data = data.transpose(1, 2).squeeze(3).unsqueeze(2)  # [batch, channels, 1, length]
-            
-            try:
-                # Step 3: 分类器训练 (主要训练步骤)
-                if args.step3 > 0:
-                    loss_dict_cs, preds, index_list, features = algorithm.update_cs(data, target, optc)
-                    
-                    # 计算准确率
-                    with torch.no_grad():
-                        _, predicted = torch.max(preds.data, 1)
-                        correct = (predicted == target).sum().item()
-                        accuracy = correct / target.size(0)
-                        epoch_acc += accuracy
-                        epoch_loss += loss_dict_cs.get('total', 0.0)
-                
-                # Step 2: 域判别器训练 (如果启用)
-                if args.step2 > 0:
-                    # 准备域标签
-                    domain_labels = domain
-                    loss_dict_os = algorithm.update_os(data, target, domain_labels, opto)
-                
-                # Step 1: 特征学习训练 (如果启用) 
-                if args.step1 > 0:
-                    # 创建组合标签用于对抗训练
-                    combined_labels = domain * testuser['n_class'] + target
-                    loss_dict_ft = algorithm.update_ft(data, target, domain, optf)
-                
-                # 学习率调度
-                if use_slr:
-                    if args.step1 > 0:
-                        schedulera.step(loss_dict_ft.get('class', 0.0))
-                    if args.step2 > 0:
-                        schedulerd.step(loss_dict_os.get('total', 0.0))
-                    if args.step3 > 0:
-                        scheduler.step(loss_dict_cs.get('total', 0.0))
-                else:
-                    if args.step1 > 0:
-                        schedulera.step()
-                    if args.step2 > 0:
-                        schedulerd.step()
-                    if args.step3 > 0:
-                        scheduler.step()
-                
-                num_batches += 1
-                
-                # 打印训练进度
-                if batch_idx % 50 == 0:
-                    client_id = testuser.get('client_id', 'unknown')
-                    progress = 100. * batch_idx / len(train_loader)
-                    print(f'Client {client_id} Epoch: {epoch+1}/{max_epochs} '
-                          f'[{batch_idx * len(data)}/{len(train_loader.dataset)} ({progress:.0f}%)] '
-                          f'Loss: {epoch_loss/(num_batches+1e-8):.6f} '
-                          f'Acc: {epoch_acc/(num_batches+1e-8):.4f}')
-                
-            except Exception as e:
-                print(f"训练步骤出错 - Batch {batch_idx}: {str(e)}")
-                # 如果某个batch出错，跳过但继续训练
-                continue
-        
-        # 每个epoch结束后的统计
-        avg_loss = epoch_loss / max(num_batches, 1)
-        avg_acc = epoch_acc / max(num_batches, 1)
-        client_id = testuser.get('client_id', 'unknown')
-        print(f'Client {client_id} Epoch {epoch+1}/{max_epochs} 完成 - '
-              f'平均损失: {avg_loss:.6f}, 平均准确率: {avg_acc:.4f}')
-        
-        # 可选：每几个epoch进行验证
-        if epoch % 2 == 0 and valid_loader is not None:
-            algorithm.eval()
-            val_acc = evaluate_model(algorithm, valid_loader, device, testuser)
-            print(f'Client {client_id} Epoch {epoch+1} 验证准确率: {val_acc:.4f}')
-            algorithm.train()
-    
-    print(f"客户端 {testuser.get('client_id', 'unknown')} 训练完成")
-    return algorithm
-
+    # 在 train_strategy.py 中修复 evaluate_model 函数
 def evaluate_model(model, data_loader, device, testuser):
     """评估模型性能"""
     model.eval()
@@ -512,10 +419,37 @@ def evaluate_model(model, data_loader, device, testuser):
         for data, target, domain in data_loader:
             data, target = data.to(device), target.to(device).long()
             
-            # 数据预处理
-            if len(data.shape) == 3:
-                data = data.unsqueeze(3)
-            data = data.transpose(1, 2).squeeze(3).unsqueeze(2)
+            # 修复数据类型和维度 - 确保与训练时一致
+            data = data.float()  # 确保数据类型为float32
+            
+            # 打印原始数据形状用于调试
+            # print(f"Original validation data shape: {data.shape}")
+            
+            # 数据预处理 - 需要与训练时的逻辑完全一致
+            if len(data.shape) == 5:  # [batch, 1, 1, channels, length]
+                data = data.squeeze(1).squeeze(1)  # [batch, channels, length]
+                
+            if len(data.shape) == 3:  # [batch, channels, length]
+                data = data.unsqueeze(2)  # [batch, channels, 1, length]
+            
+            # 检查是否需要转置 - 如果通道数不匹配
+            if len(data.shape) == 4:
+                batch_size, channels, height, width = data.shape
+                
+                # 对于dsads数据集，应该是45个通道
+                expected_channels = 45  # 从网络配置中获取
+                
+                # 如果通道数不匹配，可能需要转置
+                if channels != expected_channels and width == expected_channels:
+                    # 数据的通道和长度维度被交换了，需要转置
+                    data = data.transpose(1, 3)  # [batch, width, height, channels] -> [batch, channels, height, width]
+                    print(f"Transposed validation data from {(batch_size, channels, height, width)} to {data.shape}")
+                
+                # 再次检查维度
+                if data.shape[1] != expected_channels:
+                    print(f"Warning: Channel mismatch. Expected {expected_channels}, got {data.shape[1]}")
+                    print(f"Data shape: {data.shape}")
+                    continue  # 跳过这个batch
             
             try:
                 # 预测
@@ -527,6 +461,121 @@ def evaluate_model(model, data_loader, device, testuser):
                 
             except Exception as e:
                 print(f"评估时出错: {str(e)}")
+                print(f"Data shape: {data.shape}")
+                continue
+    
+    accuracy = correct / max(total, 1)
+    return accuracy
+def evaluate_model(model, data_loader, device, testuser):
+    """评估模型性能"""
+    model.eval()
+    correct = 0
+    total = 0
+    
+    with torch.no_grad():
+        for data, target, domain in data_loader:
+            data, target = data.to(device), target.to(device).long()
+            
+            # 修复数据类型和维度 - 确保与训练时一致
+            data = data.float()  # 确保数据类型为float32
+            
+            # 打印原始数据形状用于调试
+            # print(f"Original validation data shape: {data.shape}")
+            
+            # 数据预处理 - 需要与训练时的逻辑完全一致
+            if len(data.shape) == 5:  # [batch, 1, 1, channels, length]
+                data = data.squeeze(1).squeeze(1)  # [batch, channels, length]
+                
+            if len(data.shape) == 3:  # [batch, channels, length]
+                data = data.unsqueeze(2)  # [batch, channels, 1, length]
+            
+            # 检查是否需要转置 - 如果通道数不匹配
+            if len(data.shape) == 4:
+                batch_size, channels, height, width = data.shape
+                
+                # 对于dsads数据集，应该是45个通道
+                expected_channels = 45  # 从网络配置中获取
+                
+                # 如果通道数不匹配，可能需要转置
+                if channels != expected_channels and width == expected_channels:
+                    # 数据的通道和长度维度被交换了，需要转置
+                    data = data.transpose(1, 3)  # [batch, width, height, channels] -> [batch, channels, height, width]
+                    print(f"Transposed validation data from {(batch_size, channels, height, width)} to {data.shape}")
+                
+                # 再次检查维度
+                if data.shape[1] != expected_channels:
+                    print(f"Warning: Channel mismatch. Expected {expected_channels}, got {data.shape[1]}")
+                    print(f"Data shape: {data.shape}")
+                    continue  # 跳过这个batch
+            
+            try:
+                # 预测
+                predictions, features = model.predict(data)
+                _, predicted = torch.max(predictions.data, 1)
+                
+                total += target.size(0)
+                correct += (predicted == target).sum().item()
+                
+            except Exception as e:
+                print(f"评估时出错: {str(e)}")
+                print(f"Data shape: {data.shape}")
+                continue
+    
+    accuracy = correct / max(total, 1)
+    return accuracy
+def evaluate_model(model, data_loader, device, testuser):
+    """评估模型性能"""
+    model.eval()
+    correct = 0
+    total = 0
+    
+    with torch.no_grad():
+        for data, target, domain in data_loader:
+            data, target = data.to(device), target.to(device).long()
+            
+            # 修复数据类型和维度 - 确保与训练时一致
+            data = data.float()  # 确保数据类型为float32
+            
+            # 打印原始数据形状用于调试
+            # print(f"Original validation data shape: {data.shape}")
+            
+            # 数据预处理 - 需要与训练时的逻辑完全一致
+            if len(data.shape) == 5:  # [batch, 1, 1, channels, length]
+                data = data.squeeze(1).squeeze(1)  # [batch, channels, length]
+                
+            if len(data.shape) == 3:  # [batch, channels, length]
+                data = data.unsqueeze(2)  # [batch, channels, 1, length]
+            
+            # 检查是否需要转置 - 如果通道数不匹配
+            if len(data.shape) == 4:
+                batch_size, channels, height, width = data.shape
+                
+                # 对于dsads数据集，应该是45个通道
+                expected_channels = 45  # 从网络配置中获取
+                
+                # 如果通道数不匹配，可能需要转置
+                if channels != expected_channels and width == expected_channels:
+                    # 数据的通道和长度维度被交换了，需要转置
+                    data = data.transpose(1, 3)  # [batch, width, height, channels] -> [batch, channels, height, width]
+                    print(f"Transposed validation data from {(batch_size, channels, height, width)} to {data.shape}")
+                
+                # 再次检查维度
+                if data.shape[1] != expected_channels:
+                    print(f"Warning: Channel mismatch. Expected {expected_channels}, got {data.shape[1]}")
+                    print(f"Data shape: {data.shape}")
+                    continue  # 跳过这个batch
+            
+            try:
+                # 预测
+                predictions, features = model.predict(data)
+                _, predicted = torch.max(predictions.data, 1)
+                
+                total += target.size(0)
+                correct += (predicted == target).sum().item()
+                
+            except Exception as e:
+                print(f"评估时出错: {str(e)}")
+                print(f"Data shape: {data.shape}")
                 continue
     
     accuracy = correct / max(total, 1)
