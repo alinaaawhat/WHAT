@@ -243,10 +243,12 @@ for client_id in range(1, args.num_clients + 1):
     )
     
     # 设置路径
-    conditioner_base = os.getcwd()+os.path.join('/Style_conditioner/conditioner_pth/')
+    project_root = os.path.dirname(os.getcwd())
+    conditioner_base = os.path.join(project_root, 'Style_conditioner', 'conditioner_pth/')
     testuser['conditioner'] = conditioner_base + data_type+"_tar_"+str(target) +'_rm_'+str(remain_rate)+'seed_'+str(testuser['seed'])+f'_client{client_id}'+'-'+f'ckp_last-dl.pt'
-    testuser['newdata'] = os.getcwd()+'/Featurenet/new_data/' +testuser['name']+'-rep'+str(testuser['repeat'])+'-batch'+str(batch_size)+'-cond'+str(testuser['maxcond']) +'-weight'+(str(testuser['cond_weight']))+'.pt'
-    testuser['diff'] = os.getcwd()+'/Diffusion_model/dm_pth/'+data_type+"_tar_"+str(target) +'_rm_'+str(remain_rate)+'seed_'+str(testuser['seed'])+f'_client{client_id}'+'.pt'
+    testuser['newdata'] = project_root+'/Featurenet/new_data/' +testuser['name']+'-rep'+str(testuser['repeat'])+'-batch'+str(batch_size)+'-cond'+str(testuser['maxcond']) +'-weight'+(str(testuser['cond_weight']))+'.pt'
+    
+    testuser['diff'] = project_root+'/Diffusion_model/dm_pth/'+data_type+"_tar_"+str(target) +'_rm_'+str(remain_rate)+'seed_'+str(testuser['seed'])+f'_client{client_id}'+'.pt'
     
     # 初始化扩散模型
     train_dataset = train_loader.dataset
