@@ -31,8 +31,6 @@ def _logger(logger_name, level=logging.DEBUG):
     """
     logger = logging.getLogger(logger_name)
     logger.setLevel(level)
-    # format_string = ("%(asctime)s — %(name)s — %(levelname)s — %(funcName)s:"
-    #                 "%(lineno)d — %(message)s")
     format_string = "%(message)s"
     log_format = logging.Formatter(format_string)
     # Creating and adding the console handler
@@ -52,7 +50,7 @@ class Logger(object):
         'warning':logging.WARNING,
         'error':logging.ERROR,
         'crit':logging.CRITICAL
-    }#
+    }
 
     def __init__(self,filename,level='info',when='D',backCount=3,fmt='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s'):
         self.logger = logging.getLogger(filename)
@@ -61,11 +59,9 @@ class Logger(object):
         sh = logging.StreamHandler()
         sh.setFormatter(format_str) 
         th = handlers.TimedRotatingFileHandler(filename=filename,when=when,backupCount=backCount,encoding='utf-8')
-      
         th.setFormatter(format_str)
         self.logger.addHandler(sh) 
         self.logger.addHandler(th)
-
 
 from datetime import datetime
 from itertools import combinations
@@ -73,7 +69,6 @@ import math
 
 def combine_label(y,logger, maxlen, pre_defined_weights, weighted = True):
     index_dict = {}
-    # logger.debug(pre_defined_weights)
     for i, label in enumerate(y):
         label = label.item()
         if label not in index_dict:
@@ -83,7 +78,6 @@ def combine_label(y,logger, maxlen, pre_defined_weights, weighted = True):
     combination_dict = {}
     weight_dict = {}
 
-    
     for label, indices in index_dict.items():
         all_combinations = [] 
         all_weights = []
@@ -91,13 +85,11 @@ def combine_label(y,logger, maxlen, pre_defined_weights, weighted = True):
 
         if maxlen == None:
             sum_of_all_cond_num_weights = sum([pre_defined_weights[i] for i in range(len(indices))])
-          
             for r in range(1, len(indices) + 1):
                 all_combinations.extend(combinations(indices, r))
                 if weighted: 
                     cond_num_weight = pre_defined_weights[r-1] / sum_of_all_cond_num_weights
                     all_weights.extend([cond_num_weight/math.comb(len(indices), r)] * int(math.comb(len(indices), r)))
-                
         else:
             if maxlen > len(indices): maxlen = len(indices)
             sum_of_all_cond_num_weights = sum([pre_defined_weights[i] for i in range(maxlen)])
@@ -107,7 +99,6 @@ def combine_label(y,logger, maxlen, pre_defined_weights, weighted = True):
                     cond_num_weight = pre_defined_weights[r-1] / sum_of_all_cond_num_weights
                     all_weights.extend([cond_num_weight/math.comb(len(indices), r)] * int(math.comb(len(indices), r)))
 
-      
         if weighted: 
             weight_dict[label] = all_weights
         combination_dict[label] = all_combinations
@@ -230,7 +221,10 @@ def generate_cross_client_synthetic_data(model, x, y, testuser, logger):
         'd': torch.zeros(len(keys_tensor)).to(device)  # Mark as synthetic data
     }
 
-def train_diversity(model, args, train_loader,valid_loader, test_loader,testuser) :
+def train_diversity(model, args, train_loader, valid_loader, test_loader, testuser, max_epochs=120):
+    """
+    修改后的训练函数，支持限制最大训练轮数（用于联邦学习）
+    """
     nowtime = datetime.now()
     timename = nowtime.strftime('%d_%m_%Y_%H_%M_%S')
     log_file_name = os.getcwd()+os.path.join('/Featurenet/logs/', testuser['name']+f"logs_{nowtime.strftime('%d_%m_%Y_%H_%M_%S')}.log")
@@ -248,20 +242,19 @@ def train_diversity(model, args, train_loader,valid_loader, test_loader,testuser
     file_pathv = testuser['newdata']
     cross_client_file_path = testuser.get('cross_client_newdata', None)
     
-    # If no sample has been generated yet, generate a specified number of samples (determined by the value of testuser['repeat']). 
-    # This generation process is performed only once.
+    # Generate synthetic data (same as original)
     if os.path.exists(file_pathv):
         diff_sample = torch.load(file_pathv)  
     else:
         k_data = -1
-        for batch_no,  minibatch in enumerate(train_loader, start=1): #new_domain
+        for batch_no, minibatch in enumerate(train_loader, start=1):
             k_data = k_data + 1
-            x=  minibatch[0]
+            x = minibatch[0]
             y = minibatch[1]
-            x, y= x.to(device), y.long().to(device) #batch, len,channel,1
+            x, y = x.to(device), y.long().to(device)
             length = x.shape[1]
             remainder = 0
-            if x.size(1) % 64 !=0:
+            if x.size(1) % 64 != 0:
                 remainder = 64 - (x.size(1) % 64)
                 pad_x = F.pad(x, (0, 0, 0, remainder, 0, 0))
             if len(x.shape) == 3:
@@ -272,46 +265,42 @@ def train_diversity(model, args, train_loader,valid_loader, test_loader,testuser
                 pass
             else:
                 # Generate original synthetic data
-                styles = conditioner(x,y,testuser)
-                styles = styles.repeat(testuser['repeat'], 1)  # Generate a specified number of samples (determined by the value of testuser['repeat']) 
+                styles = conditioner(x, y, testuser)
+                styles = styles.repeat(testuser['repeat'], 1)
                 try:
                     pad_x
                     if len(pad_x.shape) == 3:
                         pad_x = pad_x.unsqueeze(3)
                     x = pad_x.transpose(1, 2).squeeze(3).unsqueeze(2)
-                    x_aug = x.repeat(testuser['repeat'],1,1,1)
+                    x_aug = x.repeat(testuser['repeat'], 1, 1, 1)
                 except:
-                    x_aug = x.repeat(testuser['repeat'],1,1,1)
+                    x_aug = x.repeat(testuser['repeat'], 1, 1, 1)
                     pass
                     
                 x_ = x_aug.squeeze(2).float()
-                combination_dict, weights_dict = combine_label(y, logger, testuser['maxcond'], testuser['cond_weight']) #Allocate the probability of each condition appearing according to testuser['maxcond'], testuser['cond_weight'], and class balance.
+                combination_dict, weights_dict = combine_label(y, logger, testuser['maxcond'], testuser['cond_weight'])
                 batch_size = y.shape[0] * testuser['repeat']
                 random_combinations = []
                 keys_tensor = []
 
-                # caculate the number of samples within each key
+                # Calculate the number of samples within each key
                 samples_per_key = batch_size // len(combination_dict)
                 remaining_samples = batch_size % len(combination_dict)
 
                 for key in combination_dict.keys():
                     values = combination_dict[key]
                     weights = weights_dict[key]
-
                     random.shuffle(values)
-
                     sampled_values = random.sample(values, min(samples_per_key, len(values)))
-
                     for value in sampled_values:
                         if value not in random_combinations:
                             random_combinations.append(value)
                             keys_tensor.append(key)
 
                 times_sample = 0
-                while len(random_combinations) < batch_size :  #Here, batch_size means generated data batch
+                while len(random_combinations) < batch_size:
                     times_sample = times_sample + 1
                     if times_sample > 1500:
-                        # print("over sample")
                         random_value = random.randint(0, len(random_combinations) - 1)
                         random_combinations.extend([random_combinations[random_value]])
                         keys_tensor.append(keys_tensor[random_value])
@@ -325,7 +314,7 @@ def train_diversity(model, args, train_loader,valid_loader, test_loader,testuser
                                 break
 
                 model.eval()
-                interpolate_out = model.sample(styles, random_combinations, rescaled_phi = 0.7)
+                interpolate_out = model.sample(styles, random_combinations, rescaled_phi=0.7)
                 try:
                     pad_x
                     interpolate_out = interpolate_out[:,:,:, -testuser['length']:]
@@ -337,17 +326,14 @@ def train_diversity(model, args, train_loader,valid_loader, test_loader,testuser
                 diff_sample[k_data]['x'] = x.float()
                 diff_sample[k_data]['y'] = torch.tensor(keys_tensor).to(device)
                 shape = y.shape
-                diff_sample[k_data]['d'] = torch.zeros(shape) #record the sample is orginal or not
+                diff_sample[k_data]['d'] = torch.zeros(shape)
                 domain_i = 1
-                diff_sample[k_data]['x'] = torch.cat([interpolate_out.unsqueeze(2),diff_sample[k_data]['x']],dim = 0)
-
-                diff_sample[k_data]['y'] = torch.cat([diff_sample[k_data]['y'],y],dim = 0)
+                diff_sample[k_data]['x'] = torch.cat([interpolate_out.unsqueeze(2), diff_sample[k_data]['x']], dim=0)
+                diff_sample[k_data]['y'] = torch.cat([diff_sample[k_data]['y'], y], dim=0)
                 zeros_tensor = torch.zeros(shape)
-                diff_sample[k_data]['d'] =  diff_sample[k_data]['d'].repeat(testuser['repeat'])
-                diff_sample[k_data]['d'] = torch.cat([diff_sample[k_data]['d'],zeros_tensor + domain_i],dim = 0)
-
+                diff_sample[k_data]['d'] = diff_sample[k_data]['d'].repeat(testuser['repeat'])
+                diff_sample[k_data]['d'] = torch.cat([diff_sample[k_data]['d'], zeros_tensor + domain_i], dim=0)
                 train_y = diff_sample[k_data]['y']
-
                 diff_sample[k_data]['d'] = torch.zeros(diff_sample[k_data]['d'].shape).to(device)
                 chose_len = int(train_y.shape[0]/(testuser['repeat']+1)) 
                 diff_sample[k_data]['d'][-chose_len:] = diff_sample[k_data]['d'][-chose_len:] + 1   
@@ -391,13 +377,13 @@ def train_diversity(model, args, train_loader,valid_loader, test_loader,testuser
     # Combine original and cross-client synthetic data
     for k_data in diff_sample.keys():
         if k_data == 0:
-            data_train =  diff_sample[k_data]['x']
+            data_train = diff_sample[k_data]['x']
             label_train = diff_sample[k_data]['y']
             domain_train = diff_sample[k_data]['d']
         else:
-            data_train = torch.cat([data_train, diff_sample[k_data]['x']],dim = 0)
-            label_train = torch.cat([label_train, diff_sample[k_data]['y']],dim = 0)
-            domain_train = torch.cat([ domain_train, diff_sample[k_data]['d']],dim = 0)
+            data_train = torch.cat([data_train, diff_sample[k_data]['x']], dim=0)
+            label_train = torch.cat([label_train, diff_sample[k_data]['y']], dim=0)
+            domain_train = torch.cat([domain_train, diff_sample[k_data]['d']], dim=0)
     
     # Add cross-client synthetic data if available
     if cross_client_sample:
@@ -410,17 +396,138 @@ def train_diversity(model, args, train_loader,valid_loader, test_loader,testuser
         
         print(f"Added {sum([len(cross_client_sample[k]['y']) for k in cross_client_sample.keys()])} cross-client synthetic samples")
 
-    generate_dataset = DataDataset(x= data_train.cpu(), label = label_train.cpu(), alabel = domain_train.cpu(), dataset = testuser['dataset'])
-    train_loader = DataLoader(dataset=generate_dataset , batch_size=args.batch_size, shuffle=True, pin_memory=True)
+    generate_dataset = DataDataset(x=data_train.cpu(), label=label_train.cpu(), alabel=domain_train.cpu(), dataset=testuser['dataset'])
+    train_loader = DataLoader(dataset=generate_dataset, batch_size=args.batch_size, shuffle=True, pin_memory=True)
     
     epochs = 1
-    
-    best_acc2= 0
+    best_acc2 = 0
     best_test_acc = 0
 
     new_x_data = []
     new_y_data = []
     new_d_data = []
-    for epoch in range(120):
-
+    
+    # 修改：限制训练轮数，支持联邦学习
+    print(f"开始训练，最大轮数: {max_epochs}")
+    
+    for epoch in range(max_epochs):
         algorithm.train()
+        
+        # 完整的训练循环，基于原始代码逻辑
+        epoch_loss = 0.0
+        epoch_acc = 0.0
+        num_batches = 0
+        
+        for batch_idx, (data, target, domain) in enumerate(train_loader):
+            data, target, domain = data.to(device), target.to(device).long(), domain.to(device).long()
+            
+            # 数据预处理 - 确保维度正确
+            if len(data.shape) == 3:
+                data = data.unsqueeze(3)  # [batch, length, channels] -> [batch, length, channels, 1]
+            
+            # 转换数据格式以匹配模型期望的输入
+            data = data.transpose(1, 2).squeeze(3).unsqueeze(2)  # [batch, channels, 1, length]
+            
+            try:
+                # Step 3: 分类器训练 (主要训练步骤)
+                if args.step3 > 0:
+                    loss_dict_cs, preds, index_list, features = algorithm.update_cs(data, target, optc)
+                    
+                    # 计算准确率
+                    with torch.no_grad():
+                        _, predicted = torch.max(preds.data, 1)
+                        correct = (predicted == target).sum().item()
+                        accuracy = correct / target.size(0)
+                        epoch_acc += accuracy
+                        epoch_loss += loss_dict_cs.get('total', 0.0)
+                
+                # Step 2: 域判别器训练 (如果启用)
+                if args.step2 > 0:
+                    # 准备域标签
+                    domain_labels = domain
+                    loss_dict_os = algorithm.update_os(data, target, domain_labels, opto)
+                
+                # Step 1: 特征学习训练 (如果启用) 
+                if args.step1 > 0:
+                    # 创建组合标签用于对抗训练
+                    combined_labels = domain * testuser['n_class'] + target
+                    loss_dict_ft = algorithm.update_ft(data, target, domain, optf)
+                
+                # 学习率调度
+                if use_slr:
+                    if args.step1 > 0:
+                        schedulera.step(loss_dict_ft.get('class', 0.0))
+                    if args.step2 > 0:
+                        schedulerd.step(loss_dict_os.get('total', 0.0))
+                    if args.step3 > 0:
+                        scheduler.step(loss_dict_cs.get('total', 0.0))
+                else:
+                    if args.step1 > 0:
+                        schedulera.step()
+                    if args.step2 > 0:
+                        schedulerd.step()
+                    if args.step3 > 0:
+                        scheduler.step()
+                
+                num_batches += 1
+                
+                # 打印训练进度
+                if batch_idx % 50 == 0:
+                    client_id = testuser.get('client_id', 'unknown')
+                    progress = 100. * batch_idx / len(train_loader)
+                    print(f'Client {client_id} Epoch: {epoch+1}/{max_epochs} '
+                          f'[{batch_idx * len(data)}/{len(train_loader.dataset)} ({progress:.0f}%)] '
+                          f'Loss: {epoch_loss/(num_batches+1e-8):.6f} '
+                          f'Acc: {epoch_acc/(num_batches+1e-8):.4f}')
+                
+            except Exception as e:
+                print(f"训练步骤出错 - Batch {batch_idx}: {str(e)}")
+                # 如果某个batch出错，跳过但继续训练
+                continue
+        
+        # 每个epoch结束后的统计
+        avg_loss = epoch_loss / max(num_batches, 1)
+        avg_acc = epoch_acc / max(num_batches, 1)
+        client_id = testuser.get('client_id', 'unknown')
+        print(f'Client {client_id} Epoch {epoch+1}/{max_epochs} 完成 - '
+              f'平均损失: {avg_loss:.6f}, 平均准确率: {avg_acc:.4f}')
+        
+        # 可选：每几个epoch进行验证
+        if epoch % 2 == 0 and valid_loader is not None:
+            algorithm.eval()
+            val_acc = evaluate_model(algorithm, valid_loader, device, testuser)
+            print(f'Client {client_id} Epoch {epoch+1} 验证准确率: {val_acc:.4f}')
+            algorithm.train()
+    
+    print(f"客户端 {testuser.get('client_id', 'unknown')} 训练完成")
+    return algorithm
+
+def evaluate_model(model, data_loader, device, testuser):
+    """评估模型性能"""
+    model.eval()
+    correct = 0
+    total = 0
+    
+    with torch.no_grad():
+        for data, target, domain in data_loader:
+            data, target = data.to(device), target.to(device).long()
+            
+            # 数据预处理
+            if len(data.shape) == 3:
+                data = data.unsqueeze(3)
+            data = data.transpose(1, 2).squeeze(3).unsqueeze(2)
+            
+            try:
+                # 预测
+                predictions, features = model.predict(data)
+                _, predicted = torch.max(predictions.data, 1)
+                
+                total += target.size(0)
+                correct += (predicted == target).sum().item()
+                
+            except Exception as e:
+                print(f"评估时出错: {str(e)}")
+                continue
+    
+    accuracy = correct / max(total, 1)
+    return accuracy
