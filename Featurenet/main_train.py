@@ -31,7 +31,7 @@ home_dir = os.getcwd()
 
 parser.add_argument('--seed', default=1, type=int,
                     help='seed value')
-parser.add_argument('--dataset', default='pamap', type=str,
+parser.add_argument('--dataset', default='dsads', type=str,
                     help='Dataset of choice: pamap, uschad, dsads')
 parser.add_argument('--target', default=1,type=int,
                     help='Choose task id')
@@ -63,9 +63,9 @@ parser.add_argument('--lr_decay1', default=1e-2,type=float, #1e-2
 parser.add_argument('--lr_decay2', default=1,type=float,
                     help='step-1-net')
 parser.add_argument('--lr', type=float, default=7e-3, help="learning rate")
-parser.add_argument('--step1', default=0,type=int,
+parser.add_argument('--step1', default=1,type=int,
                     help='epoch1')
-parser.add_argument('--step2', default=0,type=int,
+parser.add_argument('--step2', default=1,type=int,
                     help='epoch2')
 parser.add_argument('--step3', default=1,type=int,
                     help='epoch3')
@@ -140,6 +140,7 @@ diffusion = GaussianDiffusion1Dcond(
 
 diffusion= diffusion.to(device)
 diffusion= diffusion.to(device)
+testuser['diff'] = '/home/SHIH0020/robustlearn/Diffusion_model/dm_pth/global_model/dsads_tar_0_rm_0.2seed_1_global.pt'
 data = torch.load(testuser['diff'])
 diffusion.load_state_dict(data['model'])
 criterion = nn.CrossEntropyLoss()
