@@ -5,7 +5,7 @@ sys.path.append('.')
 from data_load.get_domainhar import get_acthar
 import torch.nn as nn
 import torch.utils.data as data
-from train_strategy_uscad import train_diversity
+from train_strategy import train_diversity
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 from Featurenet.utils.util import set_random_seed, get_args, print_row, print_args, train_valid_target_eval_names, alg_loss_dict, print_environ
 import os
