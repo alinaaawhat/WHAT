@@ -2,13 +2,10 @@ import torch
 
 import sys
 sys.path.append('.')
-sys.path.append('./Diffusion_model/')
-from Diffusion_model.denoising_diffusion_pytorch import Unet1D_cond,GaussianDiffusion1Dcond
-from data_load.get_domainhar import get_acthar
 from data_load.get_domainhar import get_acthar
 import torch.nn as nn
 import torch.utils.data as data
-from train_strategy import train_diversity
+from train_strategy_uscad import train_diversity
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 from Featurenet.utils.util import set_random_seed, get_args, print_row, print_args, train_valid_target_eval_names, alg_loss_dict, print_environ
 import os
@@ -31,9 +28,9 @@ home_dir = os.getcwd()
 
 parser.add_argument('--seed', default=1, type=int,
                     help='seed value')
-parser.add_argument('--dataset', default='dsads', type=str,
+parser.add_argument('--dataset', default='uschad', type=str,
                     help='Dataset of choice: pamap, uschad, dsads')
-parser.add_argument('--target', default=1,type=int,
+parser.add_argument('--target', default=0,type=int,
                     help='Choose task id')
 parser.add_argument('--remain_rate', default=0.2,type=float,
                     help='Using training data ranging from 0.2 to 1.0')
@@ -97,7 +94,6 @@ args_data = get_args(dataset,args)
 # for attr, value in vars(args_data).items():
 #     setattr(args, attr, value)
 
-conditioner = os.getcwd()+os.path.join('/Style_conditioner/conditioner_pth/')
 
 # Load data
 train_loader, valid_loader, target_loader,testuser['n_class'] = get_acthar(args,data_type ,target , batch_size =64,remain_rate = testuser['remain_data'], seed = testuser['seed'])
@@ -105,12 +101,9 @@ train_dataset = train_loader.dataset
 valid_dataset = valid_loader.dataset
 source_loaders= data.DataLoader(train_dataset, batch_size=batch_size, drop_last=False, shuffle=True)
 valid_loader= data.DataLoader(valid_dataset, batch_size=batch_size, drop_last=False, shuffle=True)
-testuser['conditioner'] =  conditioner + data_type+"_tar_"+str(target) +'_rm_'+str(remain_rate)+'seed_'+str(testuser['seed'])+'-'+f'ckp_last-dl.pt'
 
 # Load style conditioner, diffusion and newdata_path
 
-testuser['newdata']  = os.getcwd()+'/Featurenet/new_data/' +testuser['name']+'-rep'+str(testuser['repeat'])+'-batch'+str(batch_size)+'-cond'+str(testuser['maxcond']) +'-weight'+(str(testuser['cond_weight']))+'.pt'
-testuser['diff'] = os.getcwd()+'/Diffusion_model/dm_pth/'+testuser['name']+'.pt'
 
 for minibatch in source_loaders:
     batch_size = minibatch[0].shape[0]
@@ -123,30 +116,11 @@ if shape[0] % 64 !=0:
     shape[0] =  64 - (shape[0] % 64) +shape[0]
 
 
-model_our = Unet1D_cond(    
-    dim = 64,
-    num_classes = 100, 
-    dim_mults = (1, 2, 4, 8),
-    channels = shape[1],
-    context_using = True
-)
 
-diffusion = GaussianDiffusion1Dcond(
-    model_our ,
-    seq_length = shape[0],
-    timesteps = 100,  
-    objective = 'pred_noise'
-)
-
-diffusion= diffusion.to(device)
-diffusion= diffusion.to(device)
-testuser['diff'] = '/home/SHIH0020/robustlearn/Diffusion_model/dm_pth/global_model/dsads_tar_0_rm_0.2seed_1_global.pt'
-data = torch.load(testuser['diff'])
-diffusion.load_state_dict(data['model'])
 criterion = nn.CrossEntropyLoss()
 
 
-train_diversity(diffusion,args,source_loaders, valid_loader, target_loader,testuser) #fine_tune using generative samples
+train_diversity(args,source_loaders, valid_loader, target_loader,testuser) #fine_tune using generative samples
 print(testuser['name'])
-print(testuser['newdata'])
+
 
