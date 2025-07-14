@@ -121,7 +121,7 @@ def get_acthar_client(args, dataset = 'pamap',target = 0, batch_size =64, remain
 
 
 
-def get_acthar_client_fre(args, dataset = 'pamap',target = 0, batch_size =64, remain_rate = 1, seed = 1, train_diff = 0, client_id = 1):
+def get_acthar_client_fre(args, dataset = 'pamap',target = 0, batch_size =64, remain_rate = 1, seed = 1, train_diff = 0, client_id = 1, combine_train_aug = 0):
     # args = args_parse()
     args.step_per_epoch = 100000000000
     args.scaler_method = 'minmax'
@@ -170,8 +170,14 @@ def get_acthar_client_fre(args, dataset = 'pamap',target = 0, batch_size =64, re
         test_dataset = test_ori_loader.dataset
         combined_dataset = data.ConcatDataset([train_dataset, valid_dataset, test_dataset ])  
         source_loaders= data.DataLoader(combined_dataset, batch_size=16, drop_last=True, shuffle=True) 
-        
+    elif combine_train_aug:
+        train_dataset = train_ori_loader.dataset
+        train_aug_dataset = train_aug_loader.dataset
+        combined_dataset = data.ConcatDataset([train_dataset, train_aug_dataset ])  
+        source_loaders= data.DataLoader(combined_dataset, batch_size=16, drop_last=True, shuffle=True, num_workers = 0) 
+            
         return source_loaders,val_ori_loader,test_ori_loader,args.n_act_class
+        
     else:
         return train_ori_loader,val_ori_loader,test_ori_loader,args.n_act_class
    
